@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Event Manager A</title>
+    <meta
+      name="description"
+      content="A向け必須機能を備えた、イベント管理サイトの学習用サンプル。イベント一覧・詳細・作成・編集・削除・参加・キャンセルに対応。"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">新人研修 A 向け</p>
+          <h1>Event Manager A</h1>
+          <p class="hero-text">
+            イベントの一覧、詳細、作成、編集、削除、参加、キャンセルまでを一通り体験できる学習用サイトです。
+            データはブラウザの localStorage に保存されるため、同じブラウザなら再読み込み後も残ります。
+          </p>
+        </div>
+        <div class="hero-actions">
+          <button id="openCreateButton" class="primary-button">＋ 新しいイベントを作る</button>
+          <button id="seedButton" class="secondary-button">サンプルデータを初期化</button>
+        </div>
+      </header>
+
+      <section class="control-panel card">
+        <div class="field-group user-field">
+          <label for="participantName">参加者名</label>
+          <input id="participantName" name="participantName" type="text" placeholder="例: 山田 太郎" maxlength="30" />
+          <small>この名前でイベントに参加します。</small>
+        </div>
+        <div class="field-group search-field">
+          <label for="searchInput">イベント検索</label>
+          <input id="searchInput" name="searchInput" type="search" placeholder="タイトル・会場・説明で検索" />
+        </div>
+        <div class="field-group status-field">
+          <label for="statusFilter">表示条件</label>
+          <select id="statusFilter" name="statusFilter">
+            <option value="all">すべて</option>
+            <option value="upcoming">開催予定</option>
+            <option value="past">終了済み</option>
+            <option value="full">満員</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="summary-grid">
+        <article class="summary-card card">
+          <span class="summary-label">登録イベント数</span>
+          <strong id="summaryEvents">0</strong>
+        </article>
+        <article class="summary-card card">
+          <span class="summary-label">自分が参加中</span>
+          <strong id="summaryJoined">0</strong>
+        </article>
+        <article class="summary-card card">
+          <span class="summary-label">開催予定</span>
+          <strong id="summaryUpcoming">0</strong>
+        </article>
+      </section>
+
+      <main>
+        <section class="card list-card">
+          <div class="section-header">
+            <div>
+              <h2>イベント一覧</h2>
+              <p id="listDescription">条件に一致するイベントが表示されます。</p>
+            </div>
+          </div>
+          <div id="eventList" class="event-list"></div>
+          <div id="emptyState" class="empty-state hidden">
+            条件に合うイベントがありません。右上の「新しいイベントを作る」から追加してください。
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="eventDialog" class="modal">
+      <form id="eventForm" class="modal-body" method="dialog" novalidate>
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">イベント編集</p>
+            <h2 id="dialogTitle">新しいイベントを作成</h2>
+          </div>
+          <button type="button" id="closeDialogButton" class="icon-button" aria-label="閉じる">×</button>
+        </div>
+
+        <input type="hidden" id="eventId" name="eventId" />
+
+        <div class="form-grid">
+          <div class="field-group full-width">
+            <label for="title">タイトル</label>
+            <input id="title" name="title" type="text" maxlength="60" required />
+            <p class="error-message" data-error-for="title"></p>
+          </div>
+
+          <div class="field-group full-width">
+            <label for="description">説明</label>
+            <textarea id="description" name="description" rows="4" maxlength="400" required></textarea>
+            <p class="error-message" data-error-for="description"></p>
+          </div>
+
+          <div class="field-group">
+            <label for="venue">会場</label>
+            <input id="venue" name="venue" type="text" maxlength="60" required />
+            <p class="error-message" data-error-for="venue"></p>
+          </div>
+
+          <div class="field-group">
+            <label for="capacity">定員</label>
+            <input id="capacity" name="capacity" type="number" min="1" max="500" required />
+            <p class="error-message" data-error-for="capacity"></p>
+          </div>
+
+          <div class="field-group">
+            <label for="startAt">開始日時</label>
+            <input id="startAt" name="startAt" type="datetime-local" required />
+            <p class="error-message" data-error-for="startAt"></p>
+          </div>
+
+          <div class="field-group">
+            <label for="endAt">終了日時</label>
+            <input id="endAt" name="endAt" type="datetime-local" required />
+            <p class="error-message" data-error-for="endAt"></p>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="cancelDialogButton" class="secondary-button">キャンセル</button>
+          <button type="submit" class="primary-button">保存する</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="detailDialog" class="modal">
+      <div class="modal-body detail-body">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">イベント詳細</p>
+            <h2 id="detailTitle">イベント詳細</h2>
+          </div>
+          <button type="button" id="closeDetailButton" class="icon-button" aria-label="閉じる">×</button>
+        </div>
+
+        <div class="detail-grid">
+          <section class="detail-section">
+            <h3>基本情報</h3>
+            <dl class="detail-list">
+              <div><dt>会場</dt><dd id="detailVenue"></dd></div>
+              <div><dt>開始</dt><dd id="detailStart"></dd></div>
+              <div><dt>終了</dt><dd id="detailEnd"></dd></div>
+              <div><dt>定員</dt><dd id="detailCapacity"></dd></div>
+              <div><dt>状態</dt><dd id="detailStatus"></dd></div>
+            </dl>
+          </section>
+          <section class="detail-section">
+            <h3>説明</h3>
+            <p id="detailDescription" class="detail-description"></p>
+          </section>
+          <section class="detail-section">
+            <h3>参加者一覧</h3>
+            <ul id="detailParticipants" class="participant-list"></ul>
+          </section>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="detailJoinButton" class="primary-button">参加する</button>
+          <button type="button" id="detailEditButton" class="secondary-button">編集する</button>
+          <button type="button" id="detailDeleteButton" class="danger-button">削除する</button>
+        </div>
+      </div>
+    </dialog>
+
+    <section id="smokePanel" class="smoke-panel hidden" aria-live="polite">
+      <h2>Smoke Test</h2>
+      <pre id="smokeOutput"></pre>
+    </section>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
